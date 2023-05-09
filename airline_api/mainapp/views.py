@@ -11,6 +11,11 @@ from django.views.decorators.csrf import csrf_exempt
 import requests
 from datetime import datetime
 #finds flights
+def home(request):
+    context = {
+        'title': 'Home'
+    }
+    return JsonResponse(context)
 def find_flights(request):
     if request.method != 'GET':
         response_data = {'error': 'Method not allowed', 'code': '405'}

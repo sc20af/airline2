@@ -22,8 +22,10 @@ from rest_framework import routers
 from rest_framework.routers import DefaultRouter
 
 
+
 urlpatterns = [
     # other URL patterns for your app
+    path('',views.home,name="home"),
     path('admin/', admin.site.urls),
     path('airline_api/', include('mainapp.urls'))
     #path('airline_api/seats', seats.as_view(), name='search_seats'),
