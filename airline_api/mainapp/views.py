@@ -292,18 +292,30 @@ def delete(request):
         # Delete the booking
 
         data ={
-            "account_number":account_number,
-            "amount": booking.total_booking_cost,
-            "booking_id": booking.ID,
+            "transaction_id": booking.transaction_id
         }
         response = requests.post("https://jzhangly.pythonanywhere.com/get_transaction_details/", json=data)
-        transaction_id2 = response.get('transaction_id')
-
-        post_data = {"sender_cardholder_name":"James","sender_card_number":"1234567890987654","sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
-            "sender_sortcode":"373891","sender_expiry_date":"0923","recipient_cardholder_name":"Mr Bean",
-
-            "recipient_sortcode":"373891","recipient_account_number":"23456789","payment_amount":"100.00"}
-        booking = BookingInstance.objects.filter(transaction_id=transaction_id2).first()
+        if response.status_code == 200:
+            response_data = json.loads(response.text)
+            sender_cardholder_name = response_data["sender_cardholder_name"]
+            sender_card_number = response_data["sender_card_number"]
+            sender_cvv_hash = response_data["sender_cvv_hash"]
+            sender_sortcode = response_data["sender_sortcode"]
+            sender_expiry_date = response_data["sender_expiry_date"]
+            payment_amount = response_data["payment_amount"]
+            post_data = {"sender_cardholder_name":"James",
+                         "sender_card_number":"1234567890987654",
+                         "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
+                        "sender_sortcode":"373891",
+                        "sender_expiry_date":"0923",
+                        "recipient_cardholder_name":sender_cardholder_name,
+                        "recipient_sortcode":sender_sortcode,
+                        "recipient_account_number":sender_card_number,
+                        "payment_amount":payment_amount
+                        }
+        else:
+            response_data = {'message': 'Transaction ID not found', 'code': 404}
+            return JsonResponse(response_data)
         response = requests.post('https://jzhangly.pythonanywhere.com/pay/', json=post_data)
         if response.status_code == 200:
             print("Refund successful!")
