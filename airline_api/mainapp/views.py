@@ -429,7 +429,7 @@ def book(request):
             
         else:
             response_data = {"message": response.text}
-            return JsonResponse(response_data, status=400)
+            return JsonResponse(response_data, status=401)
 
 
 
