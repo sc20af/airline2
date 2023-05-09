@@ -64,7 +64,7 @@ def find_flights(request):
         for flight in flights:
             flight_dict = {
                 'cost': float(flight.flight_ticket_cost),
-                'airline': "Angeliki Airline",
+                'airline': "Angeliki's Airline",
                 'departure time': flight.departure_time,
                 'arrival time': flight.arrival_time,
                 'duration': str(flight.arrival_time - flight.departure_time),
@@ -261,6 +261,7 @@ def delete(request):
 
         # Check if the booking exists
         booking = BookingInstance.objects.filter(ID=booking_id).first()
+        
 
         if booking is None:
             response_data = {'message': 'Booking not found or wrong account number', 'code': 401}
@@ -274,6 +275,12 @@ def delete(request):
         for p in passengers:
             new_seat = SeatInstance.objects.get(ID=p.seat_id)
             new_seat.available = True
+            flightID = new_seat.flight_id
+            flight_instance = FlightInstance.objects.get(ID=flightID)
+            flight_instance.num_available_seats += 1
+            flight_instance.save()
+            #increase flight num
+
             new_seat.save()
             seat_list.append(new_seat)
         
