@@ -273,21 +273,7 @@ def delete(request):
             return JsonResponse(response_data, status=401)
 
         # Get the list of passengers for this booking based on booking id
-        passengers = Passenger.objects.filter(booking_id=booking_id)
-
-        # Update seat availability based on booking information
-        seat_list = []
-        for p in passengers:
-            new_seat = SeatInstance.objects.get(ID=p.seat_id)
-            new_seat.available = True
-            flightID = new_seat.flight_id
-            flight_instance = FlightInstance.objects.get(ID=flightID)
-            flight_instance.num_available_seats += 1
-            flight_instance.save()
-            #increase flight num
-
-            new_seat.save()
-            seat_list.append(new_seat)
+        
         
         # Delete the booking
 
@@ -320,8 +306,24 @@ def delete(request):
         if response.status_code == 200:
             print("Refund successful!")
             booking.delete()
+            passengers = Passenger.objects.filter(booking_id=booking_id)
+
+            # Update seat availability based on booking information
+            seat_list = []
+            for p in passengers:
+                new_seat = SeatInstance.objects.get(ID=p.seat_id)
+                new_seat.available = True
+                flightID = new_seat.flight_id
+                flight_instance = FlightInstance.objects.get(ID=flightID)
+                flight_instance.num_available_seats += 1
+                flight_instance.save()
+            #   increase flight num
+
+                new_seat.save()
+                seat_list.append(new_seat)
         else:
             print("Error making refund:", response.text)
+        
         response_data = {'message': 'Booking deleted successfully'}
         return JsonResponse(response_data, status=200)
 
@@ -405,16 +407,22 @@ def book(request):
         payment_confirmed=False,
         transaction_ID=0 
         )
-        post_data = {"sender_cardholder_name":"James","sender_card_number":"1234567890987654","sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
-            "sender_sortcode":"373891","sender_expiry_date":"0923","recipient_cardholder_name":"Mr Bean",
+        post_data = {"sender_cardholder_name":cardholder_name,
+                     "sender_card_number":card_number,
+                     "sender_cvc_hash":cvc_hash,
+            "sender_sortcode":"373891",
+            "sender_expiry_date":expiry_date,
+            "recipient_cardholder_name":"Mr Bean",
 
-            "recipient_sortcode":"373891","recipient_account_number":"23456789","payment_amount":"100.00"}
+            "recipient_sortcode":"373891",
+            "recipient_account_number":"23456789",
+            "payment_amount":total_book_cost}
         response = requests.post("https://jzhangly.pythonanywhere.com/pay/", json=post_data)
         print(response.status_code)
         print(response.text)
         if response.status_code == 200:
             response_body = json.loads(response.text)  # parse response JSON
-            transaction_ID2 = response_body.get("transaction_id")
+            transaction_ID2 = response_body["message"]
             booking.transaction_ID = transaction_ID2
             booking.payment_confirmed= True
             booking.save()
