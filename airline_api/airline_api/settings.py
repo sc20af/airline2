@@ -25,7 +25,6 @@ SECRET_KEY = 'django-insecure-ri(!u^y88u258ygy&md03udq5lqr3jz59h1zpt9b4$jui7%kj8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -71,7 +70,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'airline_api.wsgi.application'
 
-
+ALLOWED_HOSTS=["sc20.pythonanywhere.com"]
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
