@@ -128,9 +128,7 @@ def find_seats(request):
             }
             seats_list.append(seats_dict)
 
-        response_data = {
-            'seats': seats_list
-        }
+        response_data = seats_list
 
         return JsonResponse(response_data, status=200,safe=False)
     except ValueError:
@@ -416,11 +414,12 @@ def book(request):
         transaction_ID=0 
         )
 
-        #sender_cardholder_name, sender_card_number, sender_cvc_hash, sender_sortcode, 
-        #sender_expiry_date,recipient_cardholder_name, recipient_sortcode, recipient_account_number, payment_amount
+    # sender_cardholder_name, sender_card_hash, sender_cvc_hash, sender_sortcode, sender_expiry_date,
+    # recipient_cardholder_name, recipient_sortcode, recipient_account_number, payment_amount
         
         post_data = {"sender_cardholder_name":cardholder_name,
-                    "sender_card_number_hash":card_number,
+                    #"sender_card_number_hash":card_number,
+                    'sender_card_hash': card_number,
                     "sender_cvc_hash":cvc_hash,
                     "sender_sortcode":"373891",
                     "sender_expiry_date":expiry_date,
