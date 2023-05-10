@@ -25,7 +25,7 @@ def find_flights(request):
         date = request.GET.get('departure_date')
         departure_c = request.GET.get('departure_country')
         arrival_c= request.GET.get('arrival_country')
-        number_of_passengers = request.GET.get('number_passengers')
+        number_of_passengers = request.GET.get('num_passengers')
         max_price = request.GET.get('max_price')
         
         # Check if any  parameters are missing
@@ -68,22 +68,21 @@ def find_flights(request):
         flights_list = []
         for flight in flights:
             flight_dict = {
-                'cost': float(flight.flight_ticket_cost),
-                'airline': "Angeliki's Airline",
-                'departure time': flight.departure_time,
-                'arrival time': flight.arrival_time,
+                'flight_ticket_cost': float(flight.flight_ticket_cost),
+                'airline_name': "Angeliki's Airline",
+                'departure_time': flight.departure_time,
+                'arrival_time': flight.arrival_time,
                 'duration': str(flight.arrival_time - flight.departure_time),
-                'ID': flight.ID,
+                'id': flight.ID,
             }   
             flights_list.append(flight_dict)
 
         # Create a response 
-        response_data = {
-            'flights': flights_list
-        }
+        response_data = flights_list
+        
 
         # Return the response 
-        return JsonResponse(response_data, status=200)
+        return JsonResponse(response_data, status=200,safe=False)
         
     except Exception as e:
         # Create a error response 
@@ -111,11 +110,11 @@ def find_seats(request):
             if seat.available == True:
                 seats_dict = {
                     'seat name': seat.seat_name,
-                    'available': "Available",
+                    'available': seat.available,
                 }
             else:
                 seats_dict = {
-                    'seat name': seat.seat_name,
+                    'seat_name': seat.seat_name,
                     'available': "Not Available",
                 }
 
@@ -124,8 +123,8 @@ def find_seats(request):
         # Check if the seats queryset is empty
         if not seats_list:
             seats_dict = {
-                'seat name': 'No seats available',
-                'status': False,
+                'seat_name': 'No seats available',
+                'status': seat.available,
             }
             seats_list.append(seats_dict)
 
@@ -272,24 +271,21 @@ def delete(request):
             response_data = {'message': 'Booking not found or wrong account number', 'code': 401}
             return JsonResponse(response_data, status=401)
 
-        # Get the list of passengers for this booking based on booking id
-        
-        
         # Delete the booking
-
         data ={
-            "transaction_id": booking.transaction_id
+            "transaction_id": booking.transaction_ID
         }
-        response = requests.post("https://jzhangly.pythonanywhere.com/get_transaction_details/", json=data)
+        response = requests.post("https://sc20jzl.pythonanywhere.com/get_transaction_details/", json=data)
         if response.status_code == 200:
             response_data = json.loads(response.text)
             sender_cardholder_name = response_data["sender_cardholder_name"]
             sender_card_number = response_data["sender_card_number"]
-            sender_cvv_hash = response_data["sender_cvv_hash"]
+            sender_cvc_hash = response_data["sender_cvc_hash"]
             sender_sortcode = response_data["sender_sortcode"]
             sender_expiry_date = response_data["sender_expiry_date"]
             payment_amount = response_data["payment_amount"]
-            post_data = {"sender_cardholder_name":"James",
+            post_data = {
+                        "sender_cardholder_name":"James",
                          "sender_card_number":"1234567890987654",
                          "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
                         "sender_sortcode":"373891",
@@ -298,11 +294,12 @@ def delete(request):
                         "recipient_sortcode":sender_sortcode,
                         "recipient_account_number":sender_card_number,
                         "payment_amount":payment_amount
+
                         }
         else:
             response_data = {'message': 'Transaction ID not found', 'code': 404}
             return JsonResponse(response_data)
-        response = requests.post('https://jzhangly.pythonanywhere.com/pay/', json=post_data)
+        response = requests.post('https://sc20jzl.pythonanywhere.com/pay/', json=post_data)
         if response.status_code == 200:
             print("Refund successful!")
             booking.delete()
@@ -335,7 +332,6 @@ def delete(request):
         response_data = {'message': str(e), 'code': 500}
         return JsonResponse(response_data, status=500)
 
-
 #delete bookings that were made a week ago
 def check_booking():
     week_ago = datetime.now() - timedelta(weeks=1) #find time a week ago from now
@@ -357,25 +353,37 @@ def check_booking():
 #make a booking
 @csrf_exempt
 def book(request):
+
+    #response_data = {"message": "here"}
     if request.method != 'POST':
         response_data = {'error': 'Method not allowed', 'code': '405'}
         return JsonResponse(response_data, status=405)
-
     # Get request data from JSON payload
     try:
         check_booking()
-        payload = json.loads(request.body)
-        flight_id = payload['flight_id']
-  #      airline_name = payload['airline_name']
-        lead_passenger_contact_email = payload['lead_passenger_contact_email']
-        lead_passenger_contact_number = payload['lead_passenger_contact_number']
-        passengers = payload['passengers']
-        cardholder_name = payload['cardholder_name']
-        card_number = payload['card_number']
-        cvc_hash = payload['cvc_hash']
-        sortcode = payload['sortcode']
-        expiry_date = payload['expiry_date']
-        
+        data = json.loads(request.body)
+        flight_id = data['flight_id']
+        lead_passenger_contact_email = data['lead_passenger_contact_email']
+        lead_passenger_contact_number = data['lead_passenger_contact_number']
+        passengers = data['passengers']
+        cardholder_name = data['cardholder_name']
+        card_number = data['card_number']
+        cvc_hash = data['cvc_hash']
+        sortcode = data['sortcode']
+        expiry_date = data['expiry_date']
+
+        data = {
+            "flight_id":flight_id,
+            "lead_passenger_contact_email":lead_passenger_contact_email,
+            "lead_passenger_contact_number":lead_passenger_contact_number,
+            "passengers":passengers,
+            "cardholder_name":cardholder_name,
+            "card_number":card_number,
+            "cvc_hash":cvc_hash,
+            "sortcode":sortcode,
+            "expiry_date":expiry_date,
+        }
+        #return JsonResponse(data, status=200)
     except KeyError:
         response_data = {"message": "Missing parameters in request"}
         return JsonResponse(response_data, status=400)
@@ -407,17 +415,22 @@ def book(request):
         payment_confirmed=False,
         transaction_ID=0 
         )
-        post_data = {"sender_cardholder_name":cardholder_name,
-                     "sender_card_number":card_number,
-                     "sender_cvc_hash":cvc_hash,
-            "sender_sortcode":"373891",
-            "sender_expiry_date":expiry_date,
-            "recipient_cardholder_name":"Mr Bean",
 
-            "recipient_sortcode":"373891",
-            "recipient_account_number":"23456789",
-            "payment_amount":total_book_cost}
-        response = requests.post("https://jzhangly.pythonanywhere.com/pay/", json=post_data)
+        #sender_cardholder_name, sender_card_number, sender_cvc_hash, sender_sortcode, 
+        #sender_expiry_date,recipient_cardholder_name, recipient_sortcode, recipient_account_number, payment_amount
+        
+        post_data = {"sender_cardholder_name":cardholder_name,
+                    "sender_card_number_hash":card_number,
+                    "sender_cvc_hash":cvc_hash,
+                    "sender_sortcode":"373891",
+                    "sender_expiry_date":expiry_date,
+                    "recipient_cardholder_name":"Mr Bean",
+
+                    "recipient_sortcode":"373891",
+                    "recipient_account_number":"23456789",
+                    "payment_amount":int(total_book_cost)
+                    }
+        response = requests.post("https://sc20jzl.pythonanywhere.com/pay/", json=post_data)
         print(response.status_code)
         print(response.text)
         if response.status_code == 200:
@@ -432,9 +445,8 @@ def book(request):
             return JsonResponse(response_data, status=401)
 
 
-
         for passenger_detail in passengers:
-            seat_number = passenger_detail['seat_number']
+            seat_number = passenger_detail['seat_name']
             try:
             # Find the corresponding seat  for the specific flight and seat number
                 seat_instance = SeatInstance.objects.get(flight_id=flight_id, seat_name=seat_number)

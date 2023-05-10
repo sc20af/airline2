@@ -70,7 +70,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'airline_api.wsgi.application'
 
-ALLOWED_HOSTS=["sc20af.pythonanywhere.com"]
+ALLOWED_HOSTS=["sc20af.pythonanywhere.com",
+               "127.0.0.1",]
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
