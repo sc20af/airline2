@@ -10,12 +10,14 @@ from collections import defaultdict
 from django.views.decorators.csrf import csrf_exempt
 import requests
 from datetime import datetime
+from rest_framework.decorators import api_view
 #finds flights
 def home(request):
     context = {
         'title': 'Home'
     }
     return JsonResponse(context)
+@api_view(['GET'])
 def find_flights(request):
     if request.method != 'GET':
         response_data = {'error': 'Method not allowed', 'code': '405'}
@@ -94,6 +96,7 @@ def find_flights(request):
         # Return the response in JSON format
         return JsonResponse(response_data, status=500)
 #finds the seats on a given flight
+@api_view(['GET'])
 def find_seats(request):
     if request.method != 'GET':
         response_data = {'error': 'Method not allowed', 'code': '405'}
@@ -141,6 +144,7 @@ def find_seats(request):
         }
         return JsonResponse(response_data, status=500,safe=False)
 #update seats/ seats change
+@api_view(['PUT'])
 @csrf_exempt
 def update_seats(request):
     if request.method != 'PUT':
@@ -211,6 +215,7 @@ def update_seats(request):
         # Return the response as a JSON object with error code
         return JsonResponse(response_data, status=500, safe=False)
 #get booking details from id and lead passenger email
+@api_view(['GET'])
 def get_booking(request):
     if request.method != 'GET':
         response_data = {'error': 'Method not allowed', 'code': '405'}
@@ -260,6 +265,7 @@ def get_booking(request):
             return JsonResponse(response_data, status=500, safe=False)
 
 #delete booking and issue refund request
+@api_view(['DELETE'])
 @csrf_exempt
 def delete(request):
     if request.method != 'DELETE':
@@ -362,6 +368,7 @@ def check_booking():
             seat_list.append(new_seat)
         booking.delete()
 #make a booking
+@api_view(['POST'])
 @csrf_exempt
 def book(request):
 
