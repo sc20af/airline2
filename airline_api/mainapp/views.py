@@ -277,23 +277,35 @@ def delete(request):
         if response.status_code == 200:
             response_data = json.loads(response.text)
             sender_cardholder_name = response_data["sender_cardholder_name"]
-            sender_card_number = response_data["sender_card_number"]
+            sender_card_hash = response_data["sender_card_hash"]
             sender_cvc_hash = response_data["sender_cvc_hash"]
             sender_sortcode = response_data["sender_sortcode"]
             sender_expiry_date = response_data["sender_expiry_date"]
+            recipient_cardholder_name = response_data["recipient_cardholder_name"]
+            recipient_sortcode = response_data["recipient_sortcode"]
+            recipient_account_number = response_data["recipient_account_number"]
             payment_amount = response_data["payment_amount"]
+            #CHANGING
+            # post_data = {
+            #             "sender_cardholder_name":"Mr Bean",
+            #             "sender_card_hash":"373891",
+            #             "sender_cvc_hash":"23456789",
+            #             "payment_amount":"100.00",
+            #             "recipient_cardholder_name":"James",
+            #              "sender_card_hash":"4bb7f4c3fe298a3f2f78abd8d52552bf7f899f11c87830a1840b8bfeb7520d3b880df16fe2498fe4147d45d84cd78b93",
+            #              "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
+            #             "recipient_sortcode":"373891",
+            #             "sender_expiry_date":"0923"}
             post_data = {
-                        "sender_cardholder_name":"James",
-                         "sender_card_number":"1234567890987654",
-                         "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
-                        "sender_sortcode":"373891",
-                        "sender_expiry_date":"0923",
-                        "recipient_cardholder_name":sender_cardholder_name,
-                        "recipient_sortcode":sender_sortcode,
-                        "recipient_account_number":sender_card_number,
-                        "payment_amount":payment_amount
-
-                        }
+                        "sender_cardholder_name":sender_cardholder_name,
+                         "sender_card_hash":sender_card_hash,
+                         "sender_cvc_hash":sender_cvc_hash,
+                        "sender_sortcode":sender_sortcode,
+                        "sender_expiry_date":sender_expiry_date,
+                        "recipient_cardholder_name":"Mr Bean",
+                        "recipient_sortcode":"373891",
+                        "recipient_account_number":"23456789",
+                        "payment_amount":payment_amount}
         else:
             response_data = {'message': 'Transaction ID not found', 'code': 404}
             return JsonResponse(response_data)
@@ -347,7 +359,6 @@ def check_booking():
             new_seat.save()
             seat_list.append(new_seat)
         booking.delete()
-
 #make a booking
 @csrf_exempt
 def book(request):
@@ -417,24 +428,22 @@ def book(request):
     # sender_cardholder_name, sender_card_hash, sender_cvc_hash, sender_sortcode, sender_expiry_date,
     # recipient_cardholder_name, recipient_sortcode, recipient_account_number, payment_amount
         
-        post_data = {"sender_cardholder_name":cardholder_name,
-                    #"sender_card_number_hash":card_number,
-                    'sender_card_hash': card_number,
-                    "sender_cvc_hash":cvc_hash,
+        post_data = {"sender_cardholder_name":"James",
+                    'sender_card_hash': "4bb7f4c3fe298a3f2f78abd8d52552bf7f899f11c87830a1840b8bfeb7520d3b880df16fe2498fe4147d45d84cd78b93",
+                    "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
                     "sender_sortcode":"373891",
-                    "sender_expiry_date":expiry_date,
+                    "sender_expiry_date":"0923",
                     "recipient_cardholder_name":"Mr Bean",
-
                     "recipient_sortcode":"373891",
                     "recipient_account_number":"23456789",
-                    "payment_amount":int(total_book_cost)
+                    "payment_amount":"100.00"
                     }
         response = requests.post("https://sc20jzl.pythonanywhere.com/pay/", json=post_data)
         print(response.status_code)
         print(response.text)
         if response.status_code == 200:
             response_body = json.loads(response.text)  # parse response JSON
-            transaction_ID2 = response_body["message"]
+            transaction_ID2 = response_body["transaction_id"]
             booking.transaction_ID = transaction_ID2
             booking.payment_confirmed= True
             booking.save()
