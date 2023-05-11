@@ -375,11 +375,13 @@ def book(request):
         lead_passenger_contact_email = data['lead_passenger_contact_email']
         lead_passenger_contact_number = data['lead_passenger_contact_number']
         passengers = data['passengers']
-        cardholder_name = data['cardholder_name']
-        card_number = data['card_number']
-        cvc_hash = data['cvc_hash']
-        sortcode = data['sortcode']
-        expiry_date = data['expiry_date']
+        payment_details = data['payment_details']
+        for pay in payment_details:
+            cardholder_name = pay['cardholder_name']
+            card_number = pay['card_number']
+            cvc_hash = pay['cvc']
+            sortcode = pay['sortcode']
+            expiry_date = pay['expiry_date']
 
         data = {
             "flight_id":flight_id,
@@ -394,16 +396,16 @@ def book(request):
         }
         #return JsonResponse(data, status=200)
     except KeyError:
-        response_data = {"message": "Missing parameters in request"}
+        response_data = {"message": "Missing parameters 1 in request"}
         return JsonResponse(response_data, status=400)
     
     # Make sure all required fields are present
-    if all([flight_id, lead_passenger_contact_email, lead_passenger_contact_number, cardholder_name, 
-            card_number, cvc_hash, sortcode, expiry_date, passengers]):
+    if all([flight_id, lead_passenger_contact_email, lead_passenger_contact_number, payment_details, 
+             passengers]):
         # Do something if all parameters are present
         p = []
     else:
-        response_data = {"message": "Missing parameters in request"}
+        response_data = {"message": "Missing parameters 2 in request"}
         return JsonResponse(response_data, status=400)
     
     price = FlightInstance.objects.filter(ID=flight_id).values('flight_ticket_cost').first()['flight_ticket_cost']
