@@ -148,19 +148,28 @@ def update_seats(request):
         return JsonResponse(response_data, status=405)
 
     try:
-
         data = request.body.decode('utf-8')
-        load_data = json.loads(data)
+        print('Raw data:', data)
 
-        # Get the  parameters from  JSON 
-        book_id = load_data.get('booking_id')
-        passenger_first_name = load_data.get('passenger_first_name')
-        passenger_last_name = load_data.get('passenger_last_name')
-        new_seat_number = load_data.get('new_seat')
-        # Check if all  parameters are giv4n
-        if book_id is None or passenger_first_name is None or new_seat_number is None or passenger_last_name is None:
-            response_data = {'message': 'Missing parameters', 'code': 400}
-            return JsonResponse(response_data, status=400)
+        # Replace single quotes with double quotes
+        data = data.replace("'", "\"")
+        print('Modified data:', data)
+
+        # Parse JSON string to a Python dictionary
+        data_dict = json.loads(data)
+        print('Parsed dictionary:', data_dict)
+
+        # Get parameters from JSON data
+        book_id = data_dict.get('booking_id')
+        passenger_first_name = data_dict.get('first_name')
+        passenger_last_name = data_dict.get('last_name')
+        new_seat_number = data_dict.get('seat_name')
+
+
+
+        # Check if all parameters are present
+        if book_id is None or passenger_first_name is None or passenger_last_name is None or new_seat_number is None:
+            return JsonResponse({'message': 'Missing parameters/value error', 'code': 400}, status=400)
         
         booking = BookingInstance.objects.filter(ID=book_id).first()
         if booking is None:
@@ -216,8 +225,15 @@ def get_booking(request):
         if book is None:
             response_data = {'message': 'Booking not found or wrong email', 'code': 401}
             return JsonResponse(response_data, status=401)
+        
+        passengers = Passenger.objects.filter(booking_id=book_id)
+        p1 = Passenger.objects.filter(booking_id=book_id).first()
+        seat = SeatInstance.objects.filter(ID=p1.seat_id).first()
+        flight_id = seat.flight_id
         book_dict = {
                     'ID': book.ID,
+                    'flight_id': flight_id,
+                    'num_passengers': len(passengers),
                     'Booked time': book.booked_at_time,
                     'Lead passenger contact email': book.lead_passenger_contact_email,
                     'Lead passenger contact name': book.lead_passenger_contact_number,
@@ -226,9 +242,7 @@ def get_booking(request):
                     'Transaction ID': book.transaction_ID,
             }   
         
-        response_data = {
-            'booking': book_dict
-            }
+        response_data = book_dict
 
             # Return the response as a JSON object
         return JsonResponse(response_data, status=200)
@@ -256,6 +270,7 @@ def delete(request):
         data = json.loads(request.body.decode('utf-8'))
         booking_id = data.get('booking_id')
         account_number = data.get('account_number')
+        lead_passenger_contact_email = data.get('lead_passenger_contact_email')
 
         if booking_id is None or account_number is None:
             response_data = {'message': 'Missing parameters in request'}
@@ -274,45 +289,31 @@ def delete(request):
             "transaction_id": booking.transaction_ID
         }
         response = requests.post("https://sc20jzl.pythonanywhere.com/get_transaction_details/", json=data)
+        
         if response.status_code == 200:
+            #data = {"sender_account_number":sAccount,"sender_sortcode":sSort,"recipient_account_number":rAccount,
+            #"recipient_sortcode":rSort,"payment_amount":pay,"sender_name":sName,"recipient_name":rName}
             response_data = json.loads(response.text)
-            sender_cardholder_name = response_data["sender_cardholder_name"]
-            sender_card_hash = response_data["sender_card_hash"]
-            sender_cvc_hash = response_data["sender_cvc_hash"]
-            sender_sortcode = response_data["sender_sortcode"]
-            sender_expiry_date = response_data["sender_expiry_date"]
-            recipient_cardholder_name = response_data["recipient_cardholder_name"]
-            recipient_sortcode = response_data["recipient_sortcode"]
-            recipient_account_number = response_data["recipient_account_number"]
-            payment_amount = response_data["payment_amount"]
-            #CHANGING
-            # post_data = {
-            #             "sender_cardholder_name":"Mr Bean",
-            #             "sender_card_hash":"373891",
-            #             "sender_cvc_hash":"23456789",
-            #             "payment_amount":"100.00",
-            #             "recipient_cardholder_name":"James",
-            #              "sender_card_hash":"4bb7f4c3fe298a3f2f78abd8d52552bf7f899f11c87830a1840b8bfeb7520d3b880df16fe2498fe4147d45d84cd78b93",
-            #              "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
-            #             "recipient_sortcode":"373891",
-            #             "sender_expiry_date":"0923"}
+
+
             post_data = {
-                        "sender_cardholder_name":sender_cardholder_name,
-                         "sender_card_hash":sender_card_hash,
-                         "sender_cvc_hash":sender_cvc_hash,
-                        "sender_sortcode":sender_sortcode,
-                        "sender_expiry_date":sender_expiry_date,
-                        "recipient_cardholder_name":"Mr Bean",
+                        "sender_cardholder_name":"Angeliki Fragkeskou",
+                         "sender_card_number_hash":"bd9b1d4f9207e60821103d3cf7be503ded1a7a93b2f9430cc6a6c68072675c7e2176518fed365e25b9974f90265ec741",
+                         "sender_cvc_hash":"07f211044fd60906cd609486d0949bf697cfbc48310c8f71bdfc3dc15724066a4506142275aa73ef512f875229a2e66f",
+                        "sender_sortcode":"373891", #need that
+                        "sender_expiry_date":"2023-09-15", #need that
+                        "recipient_cardholder_name":response_data['sender_name'],
                         "recipient_sortcode":"373891",
-                        "recipient_account_number":"23456789",
-                        "payment_amount":payment_amount}
+                        "recipient_account_number":account_number,
+                        "payment_amount":booking.total_booking_cost}
         else:
             response_data = {'message': 'Transaction ID not found', 'code': 404}
             return JsonResponse(response_data)
-        response = requests.post('https://sc20jzl.pythonanywhere.com/pay/', json=post_data)
-        if response.status_code == 200:
+        
+        response1 = requests.post('https://sc20jzl.pythonanywhere.com/pay/', json=post_data)
+        if response1.status_code == 200:
             print("Refund successful!")
-            booking.delete()
+            #booking.delete()
             passengers = Passenger.objects.filter(booking_id=booking_id)
 
             # Update seat availability based on booking information
@@ -331,7 +332,8 @@ def delete(request):
         else:
             print("Error making refund:", response.text)
         
-        response_data = {'message': 'Booking deleted successfully'}
+        response_data = {'message': 'Booking deleted successfully', 'transaction_id': booking.transaction_ID,"payment_amount": booking.total_booking_cost }
+        booking.delete()
         return JsonResponse(response_data, status=200)
 
     except json.JSONDecodeError:
@@ -376,12 +378,11 @@ def book(request):
         lead_passenger_contact_number = data['lead_passenger_contact_number']
         passengers = data['passengers']
         payment_details = data['payment_details']
-        for pay in payment_details:
-            cardholder_name = pay['cardholder_name']
-            card_number = pay['card_number']
-            cvc_hash = pay['cvc']
-            sortcode = pay['sortcode']
-            expiry_date = pay['expiry_date']
+        cardholder_name = payment_details['cardholder_name']
+        card_number = payment_details['card_number']
+        cvc_hash = payment_details['cvc']
+        sortcode = payment_details['sortcode']
+        expiry_date = payment_details['expiry_date']
 
         data = {
             "flight_id":flight_id,
@@ -418,89 +419,87 @@ def book(request):
         response_data = {"message": "Not enough available seats to make the booking"}
         return JsonResponse(response_data, status=400)
     # Create a new booking
-    try:
-        booking = BookingInstance.objects.create(
-        lead_passenger_contact_email=lead_passenger_contact_email,
-        lead_passenger_contact_number=lead_passenger_contact_number,
-        total_booking_cost=total_book_cost,
-        payment_confirmed=False,
-        transaction_ID=0 
-        )
+    # try:
+    booking = BookingInstance.objects.create(
+    lead_passenger_contact_email=lead_passenger_contact_email,
+    lead_passenger_contact_number=lead_passenger_contact_number,
+    total_booking_cost=total_book_cost,
+    payment_confirmed=False,
+    transaction_ID=0 
+    )
+#need to find a way to hash card number and cvc
+    post_data = {"sender_cardholder_name"       :cardholder_name,
+                "sender_card_number_hash"       :"0a08c389d1e7ec3e1d13a74f46e1aae2b020d607316e4b818f378dc62d2c4d90477371fd034799c374ff8699b63a6f69",
+                "sender_cvc_hash"               :"99e0a589f8889faee97a49bc43e3ec1faf735413c39fffd20d2f261fb019bbf8d3b3e07f203088aa50ee279fc24d7ce3",
+                "sender_sortcode"               :sortcode,
+                "sender_expiry_date"            :expiry_date,
+                "recipient_cardholder_name"     :"Angeliki Fragkeskou",
+                "recipient_sortcode"            :'373891',
+                "recipient_account_number"      :"26102002",
+                "payment_amount"                :int(total_book_cost)
+                }
 
-    # sender_cardholder_name, sender_card_hash, sender_cvc_hash, sender_sortcode, sender_expiry_date,
-    # recipient_cardholder_name, recipient_sortcode, recipient_account_number, payment_amount
+    response = requests.post("https://sc20jzl.pythonanywhere.com/pay/", json=post_data)
+    print(response.status_code)
+    print(response.text)
+    if response.status_code == 200:
+        response_body = json.loads(response.text)  # parse response JSON
+        transaction_ID2 = response_body["transaction_id"]
+        booking.transaction_ID = transaction_ID2
+        booking.payment_confirmed= True
+        booking.save()
         
-        post_data = {"sender_cardholder_name":"James",
-                    'sender_card_hash': "4bb7f4c3fe298a3f2f78abd8d52552bf7f899f11c87830a1840b8bfeb7520d3b880df16fe2498fe4147d45d84cd78b93",
-                    "sender_cvc_hash":"9a0a82f0c0cf31470d7affede3406cc9aa8410671520b727044eda15b4c25532a9b5cd8aaf9cec4919d76255b6bfb00f",
-                    "sender_sortcode":"373891",
-                    "sender_expiry_date":"0923",
-                    "recipient_cardholder_name":"Mr Bean",
-                    "recipient_sortcode":"373891",
-                    "recipient_account_number":"23456789",
-                    "payment_amount":"100.00"
-                    }
-        response = requests.post("https://sc20jzl.pythonanywhere.com/pay/", json=post_data)
-        print(response.status_code)
-        print(response.text)
-        if response.status_code == 200:
-            response_body = json.loads(response.text)  # parse response JSON
-            transaction_ID2 = response_body["transaction_id"]
-            booking.transaction_ID = transaction_ID2
-            booking.payment_confirmed= True
-            booking.save()
-            
-        else:
-            response_data = {"message": response.text}
-            return JsonResponse(response_data, status=401)
+    else:
+        response_data = {"message": response.text}
+        return JsonResponse(response_data, status=401)
 
 
-        for passenger_detail in passengers:
-            seat_number = passenger_detail['seat_name']
-            try:
-            # Find the corresponding seat  for the specific flight and seat number
-                seat_instance = SeatInstance.objects.get(flight_id=flight_id, seat_name=seat_number)
+    for passenger_detail in passengers:
+        seat_number = passenger_detail['seat_name']
+        try:
+        # Find the corresponding seat  for the specific flight and seat number
+            seat_instance = SeatInstance.objects.get(flight_id=flight_id, seat_name=seat_number)
 
-                # Check if seat is available
-                if not seat_instance.available:
-                    response_data = {"message": f"Seat {seat_number} is already reserved"}
-                    return JsonResponse(response_data, status=400)
+            # Check if seat is available
+            if not seat_instance.available:
+                response_data = {"message": f"Seat {seat_number} is already reserved"}
+                return JsonResponse(response_data, status=400)
 
-                c = Country.objects.get(country_name=passenger_detail['nationality_country'])
-                nationality_c = c.ID
+            c = Country.objects.get(country_name=passenger_detail['nationality_country'])
+            nationality_c = c.ID
 
-            # Create passenger instance
-                passenger = Passenger.objects.create(
-                booking_id=booking.ID,
-                first_name=passenger_detail['first_name'],
-                last_name=passenger_detail['last_name'],
-                date_of_birth=passenger_detail['date_of_birth'],
-                nationality_country_id=nationality_c,
-                passport_num=passenger_detail['passport_number'],
-                seat=seat_instance
-                )
+        # Create passenger instance
+            passenger = Passenger.objects.create(
+            booking_id=booking.ID,
+            first_name=passenger_detail['first_name'],
+            last_name=passenger_detail['last_name'],
+            date_of_birth=passenger_detail['date_of_birth'],
+            nationality_country_id=nationality_c,
+            passport_num=passenger_detail['passport_number'],
+            seat=seat_instance
+            )
 
-            # Update the seat as reserved
-                seat_instance.available = False
-                seat_instance.save()
+        # Update the seat as reserved
+            seat_instance.available = False
+            seat_instance.save()
 
-            # Decrease the num_available_seats for the corresponding flight
-                flight_instance.num_available_seats -= 1
-                flight_instance.save()
+        # Decrease the num_available_seats for the corresponding flight
+            flight_instance.num_available_seats -= 1
+            flight_instance.save()
 
-            except SeatInstance.DoesNotExist:
-                response_data = {"message": f"Seat instance does not exist for seat number {seat_number} and flight {flight_id}"}
-                return JsonResponse(response_data, status=404)
+        except SeatInstance.DoesNotExist:
+            response_data = {"message": f"Seat instance does not exist for seat number {seat_number} and flight {flight_id}"}
+            return JsonResponse(response_data, status=404)
 
-            except FlightInstance.DoesNotExist:
-                response_data = {"message": "Flight instance does not exist"}
-                return JsonResponse(response_data, status=404)
+        except FlightInstance.DoesNotExist:
+            response_data = {"message": "Flight instance does not exist"}
+            return JsonResponse(response_data, status=404)
 
 
-    # Return booking ID as response
-        response_data = {"booking_id": booking.ID}
-        return JsonResponse(response_data, status=200)
+# Return booking ID as response
+    response_data = {"booking_id": booking.ID}
+    return JsonResponse(response_data, status=200)
 
-    except Exception as e:
-        response_data = {"message": str(e)}
-        return JsonResponse(response_data, status=500)
+    # except Exception as e:
+    #     response_data = {"message": str(e)}
+    #     return JsonResponse(response_data, status=500)
