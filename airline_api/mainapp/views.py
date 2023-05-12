@@ -12,6 +12,7 @@ import requests
 from datetime import datetime
 from rest_framework.decorators import api_view
 #finds flights
+
 def home(request):
     context = {
         'title': 'Home'
@@ -284,6 +285,7 @@ def delete(request):
         booking_id = data.get('booking_id')
         account_number = data.get('account_number')
         lead_passenger_contact_email = data.get('lead_passenger_contact_email')
+        p_sortcode = data.get('sortcode')
 
         if booking_id is None or account_number is None:
             response_data = {'message': 'Missing parameters in request'}
@@ -301,29 +303,44 @@ def delete(request):
         data ={
             "transaction_id": booking.transaction_ID
         }
-        response = requests.post("https://sc20jzl.pythonanywhere.com/get_transaction_details/", json=data)
+        if p_sortcode == "373891":
+            response = requests.post("https://sc20jzl.pythonanywhere.com/get_transaction_details/", json=data)
+        elif p_sortcode == "232323":
+            response = requests.post("https://lanre.pythonanywhere.com/get_transaction_details/", json=data)
         
         if response.status_code == 200:
-            #data = {"sender_account_number":sAccount,"sender_sortcode":sSort,"recipient_account_number":rAccount,
-            #"recipient_sortcode":rSort,"payment_amount":pay,"sender_name":sName,"recipient_name":rName}
             response_data = json.loads(response.text)
 
 
+        else:
+            response_data = {'message': 'Transaction ID not found', 'code': 404}
+            return JsonResponse(response_data)
+        if p_sortcode== "373891":
             post_data = {
                         "sender_cardholder_name":"Angeliki Fragkeskou",
                          "sender_card_number_hash":"bd9b1d4f9207e60821103d3cf7be503ded1a7a93b2f9430cc6a6c68072675c7e2176518fed365e25b9974f90265ec741",
                          "sender_cvc_hash":"07f211044fd60906cd609486d0949bf697cfbc48310c8f71bdfc3dc15724066a4506142275aa73ef512f875229a2e66f",
-                        "sender_sortcode":"373891", #need that
+                        "sender_sortcode":p_sortcode, #need that
                         "sender_expiry_date":"2023-09-15", #need that
                         "recipient_cardholder_name":response_data['sender_name'],
-                        "recipient_sortcode":"373891",
+                        "recipient_sortcode":p_sortcode,
                         "recipient_account_number":account_number,
-                        "payment_amount":booking.total_booking_cost}
-        else:
-            response_data = {'message': 'Transaction ID not found', 'code': 404}
-            return JsonResponse(response_data)
-        
-        response1 = requests.post('https://sc20jzl.pythonanywhere.com/pay/', json=post_data)
+                        "payment_amount":booking.total_booking_cost
+                        }
+            response1 = requests.post('https://sc20jzl.pythonanywhere.com/pay/', json=post_data)
+        elif p_sortcode == "232323":
+            post_data = {
+                        "sender_cardholder_name":"Angeliki Fragkeskou",
+                         "sender_card_number_hash":"bd9b1d4f9207e60821103d3cf7be503ded1a7a93b2f9430cc6a6c68072675c7e2176518fed365e25b9974f90265ec741",
+                         "sender_cvc_hash":"07f211044fd60906cd609486d0949bf697cfbc48310c8f71bdfc3dc15724066a4506142275aa73ef512f875229a2e66f",
+                        "sender_sortcode":p_sortcode, #need that
+                        "sender_expiry_date":"09/23", #need that
+                        "recipient_cardholder_name":response_data['sender_name'],
+                        "recipient_sortcode":p_sortcode,
+                        "recipient_account_number":account_number,
+                        "payment_amount":booking.total_booking_cost
+                        }
+            response1 = requests.post('https://lanre.pythonanywhere.com/pay/', json=post_data)
         if response1.status_code == 200:
             print("Refund successful!")
             #booking.delete()
@@ -452,19 +469,21 @@ def book(request):
     payment_confirmed=False,
     transaction_ID=0 
     )
-#need to find a way to hash card number and cvc
     post_data = {"sender_cardholder_name"       :cardholder_name,
                 "sender_card_number_hash"       :card_number,
                 "sender_cvc_hash"               :cvc_hash,
                 "sender_sortcode"               :sortcode,
                 "sender_expiry_date"            :expiry_date,
                 "recipient_cardholder_name"     :"Angeliki Fragkeskou",
-                "recipient_sortcode"            :'373891',
+                "recipient_sortcode"            :sortcode,
                 "recipient_account_number"      :"26102002",
                 "payment_amount"                :int(total_book_cost)
                 }
-
-    response = requests.post("https://sc20jzl.pythonanywhere.com/pay/", json=post_data)
+#need to find a way to hash card number and cvc
+    if sortcode == "373891":
+        response = requests.post("https://sc20jzl.pythonanywhere.com/pay/", json=post_data)
+    elif sortcode == "232323":
+        response = requests.post("https://lanre.pythonanywhere.com/pay/", json=post_data)
     print(response.status_code)
     print(response.text)
     if response.status_code == 200:
@@ -523,8 +542,8 @@ def book(request):
 
 # Return booking ID as response 
 #CHANGE booking_id to id
-    response_data = {"id": booking.ID}
-    return JsonResponse(response_data, status=200)
+        response_data = {"id": booking.ID}
+        return JsonResponse(response_data, status=200)
 
     # except Exception as e:
     #     response_data = {"message": str(e)}
