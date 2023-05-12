@@ -454,8 +454,8 @@ def book(request):
     )
 #need to find a way to hash card number and cvc
     post_data = {"sender_cardholder_name"       :cardholder_name,
-                "sender_card_number_hash"       :"0a08c389d1e7ec3e1d13a74f46e1aae2b020d607316e4b818f378dc62d2c4d90477371fd034799c374ff8699b63a6f69",
-                "sender_cvc_hash"               :"99e0a589f8889faee97a49bc43e3ec1faf735413c39fffd20d2f261fb019bbf8d3b3e07f203088aa50ee279fc24d7ce3",
+                "sender_card_number_hash"       :card_number,
+                "sender_cvc_hash"               :cvc_hash,
                 "sender_sortcode"               :sortcode,
                 "sender_expiry_date"            :expiry_date,
                 "recipient_cardholder_name"     :"Angeliki Fragkeskou",
