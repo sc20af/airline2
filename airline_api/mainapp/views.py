@@ -165,16 +165,16 @@ def update_seats(request):
         print('Parsed dictionary:', data_dict)
 
         # Get parameters from JSON data
-        book_id = data_dict.get('booking_id')
-        passenger_first_name = data_dict.get('first_name')
-        passenger_last_name = data_dict.get('last_name')
-        new_seat_number = data_dict.get('seat_name')
+        book_id = data_dict['booking_id']
+        passenger_first_name = data_dict['first_name']
+        passenger_last_name = data_dict['last_name']
+        new_seat_number = data_dict['seat_name']
 
 
 
         # Check if all parameters are present
         if book_id is None or passenger_first_name is None or passenger_last_name is None or new_seat_number is None:
-            return JsonResponse({'message': 'Missing parameters/value error', 'code': 400}, status=400)
+            return JsonResponse({'message': 'Missing parameters1/value error', 'code': 400}, status=400)
         
         booking = BookingInstance.objects.filter(ID=book_id).first()
         if booking is None:
@@ -236,16 +236,22 @@ def get_booking(request):
         p1 = Passenger.objects.filter(booking_id=book_id).first()
         seat = SeatInstance.objects.filter(ID=p1.seat_id).first()
         flight_id = seat.flight_id
+        #for reference, its expecting id, total_booking_cost, transaction_id, num_passengers, flight_id and booked_at_time
+        if isinstance(book.booked_at_time, datetime):
+            formatted_dt = book.booked_at_time.strftime("%Y-%m-%dT%H:%M:%S")
+        else:
+            dt = datetime.strptime(book.booked_at_time, "%Y-%m-%d %H:%M:%S")
+            formatted_dt = dt.strftime("%Y-%m-%dT%H:%M:%S")
         book_dict = {
-                    'ID': book.ID,
+                    'id': book.ID,
                     'flight_id': flight_id,
                     'num_passengers': len(passengers),
-                    'Booked time': book.booked_at_time,
-                    'Lead passenger contact email': book.lead_passenger_contact_email,
-                    'Lead passenger contact name': book.lead_passenger_contact_number,
-                    'Total booking cost': book.total_booking_cost,
-                    'Payment confirmed': book.payment_confirmed,
-                    'Transaction ID': book.transaction_ID,
+                    'booked_at_time': formatted_dt,
+                    'lead_passenger_contact_email': book.lead_passenger_contact_email,
+                    'lead_passenger_contact_number': book.lead_passenger_contact_number,
+                    'total_booking_cost': book.total_booking_cost,
+                    'payment_confirmed': book.payment_confirmed,
+                    'transaction_id': book.transaction_ID,
             }   
         
         response_data = book_dict
@@ -390,11 +396,6 @@ def book(request):
         data_dict = json.loads(data)
         print('Parsed dictionary:', data_dict)
 
-        # Get parameters from JSON data
-        # book_id = data_dict.get('booking_id')
-        # passenger_first_name = data_dict.get('first_name')
-        # passenger_last_name = data_dict.get('last_name')
-        # new_seat_number = data_dict.get('seat_name')
         check_booking()
         data = json.loads(request.body)
         flight_id = data_dict['flight_id']
