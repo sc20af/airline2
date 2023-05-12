@@ -56,7 +56,7 @@ def find_flights(request):
                                         departure_location_id=departure_co.ID,
                                         arrival_location_id=arrival_co.ID,
                                         num_available_seats__gte=number_of_passengers)
-
+    # Filter flights by max_price
         # Filter with max price if it is given as a parameter
         if max_price is not None and max_price != '':
             try:
@@ -76,6 +76,7 @@ def find_flights(request):
                 'arrival_time': flight.arrival_time,
                 'duration': str(flight.arrival_time - flight.departure_time),
                 'id': flight.ID,
+                'num_available_seats': flight.num_available_seats
             }   
             flights_list.append(flight_dict)
 
@@ -112,13 +113,13 @@ def find_seats(request):
         for seat in seats:
             if seat.available == True:
                 seats_dict = {
-                    'seat name': seat.seat_name,
+                    'seat_name': seat.seat_name,
                     'available': seat.available,
                 }
             else:
                 seats_dict = {
                     'seat_name': seat.seat_name,
-                    'available': "Not Available",
+                    'available': seat.available,
                 }
 
             seats_list.append(seats_dict)
@@ -378,13 +379,29 @@ def book(request):
         return JsonResponse(response_data, status=405)
     # Get request data from JSON payload
     try:
+        data = request.body.decode('utf-8')
+        print('Raw data:', data)
+
+        # Replace single quotes with double quotes
+        data = data.replace("'", "\"")
+        print('Modified data:', data)
+
+        # Parse JSON string to a Python dictionary
+        data_dict = json.loads(data)
+        print('Parsed dictionary:', data_dict)
+
+        # Get parameters from JSON data
+        # book_id = data_dict.get('booking_id')
+        # passenger_first_name = data_dict.get('first_name')
+        # passenger_last_name = data_dict.get('last_name')
+        # new_seat_number = data_dict.get('seat_name')
         check_booking()
         data = json.loads(request.body)
-        flight_id = data['flight_id']
-        lead_passenger_contact_email = data['lead_passenger_contact_email']
-        lead_passenger_contact_number = data['lead_passenger_contact_number']
-        passengers = data['passengers']
-        payment_details = data['payment_details']
+        flight_id = data_dict['flight_id']
+        lead_passenger_contact_email = data_dict['lead_passenger_contact_email']
+        lead_passenger_contact_number = data_dict['lead_passenger_contact_number']
+        passengers = data_dict['passengers']
+        payment_details = data_dict['payment_details']
         cardholder_name = payment_details['cardholder_name']
         card_number = payment_details['card_number']
         cvc_hash = payment_details['cvc']
@@ -503,8 +520,9 @@ def book(request):
             return JsonResponse(response_data, status=404)
 
 
-# Return booking ID as response
-    response_data = {"booking_id": booking.ID}
+# Return booking ID as response 
+#CHANGE booking_id to id
+    response_data = {"id": booking.ID}
     return JsonResponse(response_data, status=200)
 
     # except Exception as e:
