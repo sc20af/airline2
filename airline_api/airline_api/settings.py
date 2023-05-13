@@ -9,12 +9,13 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATIC_URL = '/static/'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-ri(!u^y88u258ygy&md03udq5lqr3jz59h1zpt9b4$jui7%kj8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-
+STATICFILES_DIRS = [    '/home/sc20af/airline2/airline_api/static_files/',    '/home/sc20af/airline2/airline_api/static/',]
 
 # Application definition
 
@@ -70,8 +71,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'airline_api.wsgi.application'
 
-ALLOWED_HOSTS=["sc20af.pythonanywhere.com",
-               "127.0.0.1",]
+ALLOWED_HOSTS=["sc20af.pythonanywhere.com"]
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
